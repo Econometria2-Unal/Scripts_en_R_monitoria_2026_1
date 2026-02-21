@@ -1,0 +1,997 @@
+---
+title: "Sesión 1 - Introducción a R"
+author: "Monitorías Econometría II"
+date: "2023-02"
+output:
+  html_document:
+    toc: yes
+    number_sections: FALSE
+    theme: united
+    css: style.css
+  pdf_document:
+    toc: yes
+subtitle: Universidad Nacional de Colombia - Facultad de Ciencias Económicas
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introducción y descripción
+
+R es un lenguaje de programación diseñado principalmente para el análisis estadístico. 
+Usado específicamente para manipular, visualizar y modelar datos, R brinda la posibilidad
+a sus usuarios de crear gráficos de gran utilidad y desarrollar modelos predictivos 
+(bastante útiles en la econometría).
+R presenta una naturaleza de código abierto que fomenta una comunidad activa que 
+contribuye con paquetes y extensiones, permitiendo a los usuarios acceder a herramientas 
+especializadas y mantenerse actualizados con las últimas técnicas analíticas (Muchos de 
+los paquetes que usaremos en este curso fueron implementados por la comunidad). Al brindar 
+un entorno flexible y poderoso, R se ha convertido en una herramienta esencial en la toma 
+de decisiones informadas basadas en datos en una amplia gama de campos, además, cuenta con
+una alta demanda laboral.
+
+Esta primer sesión pretenderá introducir la sintaxis básica de R mediante la IDE RStudio (Integrated
+development enviroment), haciendo enfasis en variables numéricas, variables "strings", variables
+lógicas y colecciones básicas, estructuras de flujo básicas y funciones. Posteriormente introducir 
+el manejo de conceptos estadísticos en el programa así como los principales paquetes de R 
+para estadística descriptiva y la econometría.
+
+
+# 1. Números
+
+En R podremos manipular variables numéricas. Esta sección presenta operaciones 
+aritméticas con los números, colecciones básicas con números en R y funciones de variable.
+
+Evidentemente, R nos permitirá hacer una gran cantidad de procesos con variables númericas, 
+aquí presentaremos una base básica pero solida, recomendamos revisar documentación en internet
+para conocer más de las funciones en R.
+
+
+```{r}
+5
+
+x =  33
+
+class(x)
+```
+
+## 1.1. Operaciones aritméticas básicas
+
+Con R podremos ejecutar las operaciones básicas de la aritmética, aquí podremos ver 
+los comandos que han de usarse para llevar a cabo las operaciones.
+
+**Suma:**
+
+Para las sumas usamos el operador "+"
+
+```{r}
+
+2 + 2 
+
+suma = 2 + 2 
+class(suma)
+
+```
+
+También podremos emplear variables asiganadas para ejecutar operaciones, recordemos
+que R es sensible a las mayusculas, por lo que las variables "Numero","numero" y 
+"NUMERO" NO son iguales.
+
+```{r}
+a = 2
+b = 3 
+c = 5.5
+
+a+b 
+
+suma_1 = a+b; suma_1
+```
+
+**Resta:**
+
+Para las restas "-"
+
+```{r}
+
+resta = a - c
+resta
+class(resta)
+
+```
+
+**Multiplicación:**
+
+Para las multiplicaciones "*"
+
+```{r}
+
+multiplicacion = a*c
+multiplicacion
+class(multiplicacion)
+```
+
+**División:**
+
+Para las divisiones "/"
+
+```{r}
+division = b/a
+division
+class(division)
+```
+
+**Potencias:**
+
+Para potencias usamos "**" 
+
+```{r}
+potencia = a**b
+potencia
+class(potencia)
+```
+
+**Raices:**
+
+Para las raices, R presenta una función que genera la raíz cuadrada
+
+```{r}
+raiz = sqrt(a)
+raiz
+class(raiz)
+```
+
+Sin embargo, recordemos que elevar a 1/2 produce el resultado de una raíz
+
+```{r}
+a**1/2
+```
+
+## 1.2. Colecciones básicas
+
+En R podremos definir colecciones como: vectores, matrices y listas. Estas colecciones 
+comprenden funciones útiles para la manipulación de datos, gran cantidad de los objetos
+que se usan en paquetes de econometría son listas y matrices.
+
+**Vectores:**
+
+Para definir un Vector usamos "c()".
+
+```{r}
+numeros = c(0,1,2,3,4,5,6,7,8,9)
+numeros
+class(numeros)
+```
+
+Si necesitamos crear vectores que sigan una secuencia específica, R ofrece un par de funciones
+básicas, entre ellas: iteración por n objetos y repeticiones.
+
+```{r}
+secuencia_simple = 0:10
+secuencia_simple
+
+secuencia_en_2 = seq(0,10, by = 2)
+secuencia_en_2
+
+secuencia_repetida = rep(5,10)
+secuencia_repetida
+```
+
+Es importante mencionar que podremos seleccionar un elemento de un vector por su 
+posición usando "[]" y el número de la posición. Si usamos un "-" y la posición, R nos
+entregará todos los elementos del vector exceptuando el de la posición seleccionada.
+
+```{r}
+vector = c(1,6,8,4,2,3)
+
+vector[1]
+vector[-1]
+```
+
+
+**Listas:**
+
+Las listas se generan con el comando "list()". Estas se diferencian en los vectores 
+principalemente en que aceptan variables no numéricas, y no solo eso, también puedes incluir
+un vector dentro de una lista o una lista dentro de una lista.
+
+```{r}
+lista = list(2,3,5,7,11)
+
+lista_1 = list(1,"Hola", lista, vector)
+lista_1
+class(lista_1)
+
+lista_1[2]
+
+```
+
+Para seleccionar elementos de una lista, debemos asignar un nombre a cada elemento para 
+usar el método de selección "$", el cual no busca por posición si no por nombramiento.
+
+```{r}
+
+lista_2 = list(uno = 1, nombre = "Japeto", lista_0 = lista, vector_0 = vector)
+
+lista_2
+
+lista_2$uno
+lista_2$nombre
+lista_2$lista_0
+
+```
+
+Las listas no permiten la aplicación de funciones númericas como los vectores, esto 
+debido a su clase
+
+**Matrices:**
+
+Para definir una matriz se usa "matrix()", la forma de la sintaxis de la matriz obedece
+a un vector para ubicar los números, el número de filas y el número de columnas. Es decir:
+matrix( Vector, nrow = Número de filas, ncol = Número de columnas)
+
+```{r}
+matriz = matrix(1:10, nrow = 5, ncol = 2)
+matriz
+class(matriz)
+
+matriz_1 = matrix(1:10, nrow = 5, byrow = TRUE)
+matriz_1
+
+```
+
+A continuación, algunas de las funciones útiles para las operaciones matriciales.
+
+```{r}
+
+matriz_prueba = matrix(c(4,12,9,11), nrow = 2)
+matriz_prueba
+
+# Diagonal
+diag(matriz_prueba)
+
+# Determinante
+det(matriz_prueba)
+
+# Transpuesta
+t(matriz_prueba)
+
+# Dimensión 
+dim(matriz_prueba)
+
+# Inversa
+solve(matriz_prueba)
+```
+
+Como en la vida real, multiplicar una matriz no se hace de forma tan sencilla... En 
+R, para multiplicar matrices usamos "%*%".
+
+```{r}
+matriz_prueba_trans = t(matriz_prueba)
+
+matriz_prueba_trans %*% matriz_prueba
+```
+
+
+## 1.3. Funciones de variable numérica útiles para el curso 
+
+A lo largo del curso de econometría II, se usarán operaciones en las sesiones regulares que serán
+fundamentales para el manejo de series de tiempo, entre ellas: el operador de diferencia y el 
+logaritmo natural. En R se aplican como:
+
+```{r}
+vector_prueba = c(5,3,13,46,12,45,6,13,5)
+
+
+diff(vector_prueba)
+log(vector_prueba)
+
+diff(log(vector_prueba))
+
+```
+
+Recordemos que diferenciar un vector (o serie) implica la eliminación de un elemento.
+
+```{r}
+
+length(vector_prueba)
+length(diff(vector_prueba))
+```
+
+
+# 2. Carácteres y operadores lógicos
+
+## 2.1. Carácteres
+
+En R, los carácteres comportan una clase distinta a la numérica, lo que implica que no podamos
+usar las funciones que hemos visto previamente. Un ejemplo de un carácter se puede ver como:
+
+```{r}
+saludo = "Hola"
+saludo
+class(saludo)
+
+```
+
+Hay un par de funciones útiles para generar carácteres como texto, entre ellas: "paste()" y "paste0()"
+
+```{r}
+nombre = "Pilar"
+edad = 23
+
+paste(saludo, nombre)
+
+paste(saludo,"mi nombre es", nombre, "y tengo", edad, "años")
+```
+
+
+También podremos generar vectores con carácteres
+
+```{r}
+nombres = c("Sergio","Luis","Milena")
+nombres
+class(nombres)
+```
+
+
+## 2.2. Operadores lógicos
+
+R también incorpora los operadores lógicos habituales utilizando la notación clásica: "FALSE"
+y "TRUE". De forma binaria FALSE es 0 y TRUE es 1. 
+
+```{r}
+class(TRUE)
+class(FALSE)
+```
+
+Para emplear los operadores relacionales, se debe tener en cuenta la siguiente sintaxis.
+
+```{r}
+a = 1
+b = 2
+c = 3
+
+# > Mayor que
+
+a > b
+c > a
+
+# < Menor que
+
+b<c
+b<a
+
+# == Igual a
+
+a==b
+a==a
+
+# != Distinto a 
+
+a!=b
+b!=b
+```
+
+# 3. Funciones
+
+R permite al usuario crear y definir funciones a medida, con las que se puede hacer 
+cualquier cosa, desde una suma hasta una función impulso respuesta (función que será
+retomada en sesiones futuras).
+
+Por ejemplo, definamos una función que realice una suma de dos números. La sintaxis de 
+las funciones sigue la forma:
+
+función = function(argumento 1, argumento2,..., argumentoN)
+        { sentencias
+        return = objeto}
+        
+```{r}
+suma = function(A,B)
+{ return(A+B)
+}
+
+
+suma(10,15)
+```
+
+También podemos generar una función que genere una raíz de cualquier orden. En la función 
+podemos dejar el valor reservado "2", de esta forma si el usuario olvida agregar el orden,
+la función arrojará automáticamente una raíz cuadrada.
+
+
+```{r}
+n_raiz = function(radicando, orden = 2)
+  { 
+  resultado = radicando**(1/orden)
+  
+  return(resultado)
+  }
+
+n_raiz(64,3)
+
+n_raiz(81)
+```
+
+Aumentemos la dificultad, agreguemos una función que nos permita resolver un polinomio de
+grado 2, es decir, una cuadrática.
+
+```{r}
+cuadratica = function(a,b,c){
+  numerador_cuadratica = b^2-4*a*c
+  
+  x1 = (-b-sqrt(numerador_cuadratica)/2*a)
+  x2 = (-b+sqrt(numerador_cuadratica)/2*a)
+  
+  return(c(x1,x2))
+}
+
+
+cuadratica(4,8,2)
+```
+
+La única limitación de esta función, es que no tolera los posibles números complejos de 
+la formula. 
+
+
+# 4. Estructuras de flujo 
+
+Una estructura de flujo en R (y en la programación en sí), se refiere a la manera en 
+que se organiza y controla el flujo de ejecución de un programa, bastante útiles para
+generar funciones avanzadas. Las estructuras básicas son los bucles y los condicionales.
+
+## 4.1. Condicionales
+
+Estas estructuras permiten que un programa tome decisiones basadas en condiciones. Tiene gran
+conexión con los operadores lógicos. Veamos un ejemplo con la posible nota de Econometría II que
+puedes obtener. 
+
+```{r}
+
+nota_econometria_II = 4.5
+
+if (nota_econometria_II >= 3.0 & nota_econometria_II <= 5.0){
+  
+  print("Usted ha aprobado satisfactoriamente el curso de Econometría II")
+  
+} else if (nota_econometria_II >= 0 & nota_econometria_II < 3.0){
+  
+  print("Mijo..., se rajó")
+  
+} else if (nota_econometria_II)  {
+  
+  print("???")
+}
+
+```
+
+Si el valor hipotético hubiese sido menor a 3 y mayor o igual que 0, el mensaje hubiera
+sido "Mijo..., se rajó".
+
+## 4.2. Bucles 
+
+Estas estructuras permiten que un bloque de código se repita varias veces. Los bucles 
+"for" y "while" son ejemplos comunes. El bucle "for" itera un número específico de 
+veces, mientras que el bucle "while" se ejecuta mientras una condición sea verdadera.
+
+**Bucle for:** La sentencias "for" permite ejecutar un comando repetidas veces según el 
+vector seleccionado, por ejemplo:
+
+```{r}
+for(i in c(1,2,3,4,5,6,7,8)){
+  
+  print(i^2-10)
+  
+}
+```
+
+También podemos usar un bucle con condicionales adentro.
+
+```{r}
+for(n in -10:10){
+  
+  if(n >= 0){
+    
+    print(paste(n, "es un número positivo"), quote = FALSE)
+    
+  } else{
+    
+    print(paste(n, "es un número negativo"), quote = FALSE)
+  }
+}
+```
+
+Finalmente, podremos generar un bucle dentro otro bucle, es decir, un bucle anidado.
+Un buen ejemplo son las tablas de multiplicar.
+
+```{r}
+numeros_1 = 1:10
+numeros_2 = 1:10
+
+for(x in numeros_1){
+  
+  for(y in numeros_2){
+    
+    print(paste(x,"X",y,"=", x*y), quote = "FALSE")
+  }
+  
+  print(" ", quote = FALSE)
+}
+```
+
+**Bucle While:**
+
+El bucle While ejecutará un comando mientras se cumpla determinada condición. Por ejemplo,
+si el valor es menor a 5, este le sumará un 1 hasta que el valor escogido sea igual a 5.
+
+```{r}
+i = 0
+
+while (i < 5){
+  
+  print(i)
+  
+  i = i + 1    # Condición de actualización
+}
+```
+
+# 5. Paquetes útiles para la econometría
+ 
+A lo largo del curso se usaran paquetes diseñados para el manejo de datos como 
+series de tiempo, corte transversal y data panel. Además varios paquetes traeran 
+funciones que se verán el curso de Econometría II, como pruebas de raíz unitaria,
+gráficos de FAC y FACP, test de hipótesis clave, etc. Algunos de los paquetes 
+importantes son:
+
+* readxl:     Para leer archivos excel
+* tidyverse:  Conjunto de paquetes (incluye dplyr y ggplot2)
+* tseries:    Para manipular series de tiempo
+* ggplot2:    Poderosisimo motor gráfico para datos.
+* ggfortify:  Extensión de ggplot2 que permite graficar tseries
+* seasonal:   Para desestacionalizar series de tiempo
+* urca:       Para las pruebas de raíz unitaria
+* lmtest:     Para pruebas de significancia individual 
+* forecast:   Para generar las ACF, ACFP y generar pronósticos
+* plm:        Para la manipulación de datos panel
+* dplyr:      Para modificar Data.Frames
+* vars:       Para usar modelos VAR
+* VAR.etp:    Para intervalos de confianza por Bootstrapping
+* seasonal:   Para desestacionalizar series. 
+* tsDyn:      Para hallar los coeficientes del modelo VECM
+* haven:      Para leer archivos de STATA
+
+Cuando querramos utilizar alguno de estos paquetes, debemos verificar que se haya 
+instalado, esto podremos verlo en el apartado "Packages" del directorio de trabajo
+(cuadrante inferior derecho).
+
+Una forma clásica de instalar paquetes es con el siguiente comando: "install.packages()".
+
+```{r}
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+```
+
+
+# 6. Estadística descriptiva (Análisis exploratorio de datos)
+
+Recientemente, hemos instalado y traido paquetes que serán utiles para un breve
+análisis exploratorio. R presenta algunas bases de datos base dentro de sus códigos.
+Una común es "mtcars" un Data.Frame con características de algunos de los vehiculos 
+deportivos de los 80's.
+
+```{r}
+mtcars
+
+View(mtcars)
+```
+
+## 6.1. Medidas de tendencia central
+
+Veamos algunas medidas de tendencia central.
+
+```{r}
+# Media 
+mean(mtcars$hp)
+
+# Varianza
+var(mtcars$hp)
+
+# Desviación estándar
+sd(mtcars$hp)
+
+# Rango
+range(mtcars$hp)
+
+# Cuantiles 
+quantile(mtcars$hp, probs = 0.25)
+quantile(mtcars$hp, probs = 0.89)
+
+# Sumatoria 
+sum(mtcars$hp)
+```
+
+Es importante mencionar que podemos ver todas estas variables en un resumen con la función
+"summary()" que presenta R.
+
+```{r}
+summary(mtcars)
+```
+
+También podemos ver las matrices de covarianzas y correlaciones.
+
+```{r}
+cov(mtcars)
+
+cor(mtcars)
+```
+
+## 6.2. Análisis exploratorio de datos gráfico 
+
+De cierta forma, los gráficos son mucho más útiles para entender el comportamiento
+de los datos. En esta subsección se podrán encontrar gráficos descriptivos como
+histogramas, diagramas, gráficos de dispersión, etc.
+
+**Histogramas:**
+
+```{r}
+hist(mtcars$mpg, main = "Histograma de las millas por galón",
+     col = "lightblue", ylab = "Frecuencia", xlab = "Millas por galón")
+```
+
+
+**Boxplots:**
+
+```{r}
+boxplot(mtcars$hp, mtcars$disp, 
+        main = "Boxplot de HP y Disp",
+        col = c("salmon", "orange"))
+
+```
+
+
+**Scatter-Plots:**
+
+```{r}
+plot(mtcars$hp, mtcars$disp, 
+      main = "Diagrama de dispersión",
+      col = "blue", xlab = "", ylab ="")
+
+dispersiones = mtcars[1:3]
+
+plot(dispersiones)
+
+```
+
+
+**Gráficos de cuantiles por normalidad:**
+
+```{r}
+qqnorm(mtcars$hp)
+qqnorm(mtcars$disp)
+```
+
+
+## 6.3. Manejo de datos con Dplyr
+
+Dplyr ofrece una de las funciones más poderosas para el manejo de datos. La función pipe 
+definida como "%>%" permite realizar secuencias de operaciones de manipulación y transformación
+de datos en una forma legible y eficiente. En resumen, la función pipe nos permitirá acceder a 
+las filas y columnas de un Data.Frame con el fin de seleccionar, filtrar, reordenar, eliminar y
+muchas funciones más al gusto del analista de datos (Pueden generar un pipe de forma rápida usando
+Ctrl + Shift + M).
+
+Veamos algunas funciones con la base de datos que ya hemos empleado. Estas funciones son 
+denominadas como "verbos".
+
+Supongamos que somos un ciudadano interesado en carrocería deportiva de los 80's y queremos comprar
+un nuevo vehiculo. Sin embargo, tenemos un par de condiciones... Necesitamos un vehiculo que sea
+amable con nuestro bolsillo, es decir, que gastemos la menor cantidad de gasolina (el mayor mpg 
+posible). También queremos que nuestro carro tenga más de 4 cilindros porque necesitamos
+una combustión alta con un rugido agradable. Además queremos potencia en nuestro vehiculo, por lo que necesitaremos una cantidad
+significativa de caballos de fuerza. Para nosotros será suficiente más de 120 hp.
+
+
+"%>% select()" Nos permitirá seleccionar solamente un conjunto de variables especificas, para 
+este caso, seleccionaremos las variables numéricas.
+
+```{r}
+
+mtcars_selected = mtcars %>%  select(mpg, cyl, hp)
+mtcars_selected
+
+```
+
+Necesitamos ordenar nuestros datos depende a la duración de la gasolina de los vehiculos.
+Es decir, ordenaremos de forma descendente los datos con respecto al millaje por galón. Para ello
+organizamos nuestros datos con "%>% arrange(desc())":
+
+```{r}
+mtcars_selected %>% arrange(desc(mpg))
+
+```
+
+Podemos notar que el Toyota Corolla tiene el mayor millaje, ajustemos las variables ahora
+con el fin de que tengan más de 4 cilindros, para ello usamos: "%>% filter()".
+
+```{r}
+mtcars_selected_c4 = mtcars_selected %>% filter(cyl > 4)
+mtcars_selected_c4
+```
+
+
+Ahora, aplicamos la condición de caballos de fuerza, nuevamente con un filtro.
+
+```{r}
+mtcars_selected_c4_hp = mtcars_selected_c4 %>% filter(hp > 120)
+mtcars_selected_c4_hp
+```
+
+Ordenamos ahora por el vehiculo que tenga mayor millaje por galón y está será nuestra
+selección!
+
+```{r}
+mtcars_selected_c4_hp %>% arrange(desc(mpg))
+```
+Por ende, el Ferrari Dino es el mejor carro que cumple con los requisitos que hemos impuesto. Posee la potencia 
+en caballos de fuerza y cilindraje que necesitamos; y es el más amable con nuestro bolsillo de las posibles opciones.
+
+
+La función pipe también nos permitirá mutar variables, para ello usamos "%>% mutate()":
+
+```{r}
+
+manip1 = mtcars %>%  mutate(
+          mult = mpg * cyl,
+          sqr_mpg = mpg^2)
+
+manip1
+```
+
+Analicemos otro ejemplo.
+
+Usaremos una base de datos que importaremos nosotros con la función "read_rds()". Visualizaremos
+sus datos. 
+
+```{r}
+counties = read_rds(file.choose())
+
+# Visualización de la base de datos
+
+View(counties)
+glimpse(counties)
+
+```
+
+Ahora, generemos una serie de filtros sobre la base de datos con el fin de filtrar 
+condados de nuestro ínteres
+
+```{r}
+# Seleccionamos ciertas columnas de interés
+
+counties_selected = counties %>%
+  select(state, county, population, 
+         private_work, public_work, self_employed)
+
+# Ordenar de manera descendente el trabajo público
+
+counties_selected %>%
+  arrange(desc(public_work))
+
+# Vamos a seleccionar otras variables 
+
+counties_selected2 = counties %>%
+  select(state, county, population)
+
+# Filtramos por los condados con una población superior a un millón
+
+counties_selected2 %>%
+  filter(population > 1000000)
+
+# Filtramos por los condados en el estado de California con una población 
+# superior a un millón
+
+counties_selected2 %>%
+  filter(state == "California",
+         population > 1000000)
+
+```
+
+Como resultado notamos que hay 9 condados en California con una población superior
+a un millón de habitantes. Generemos más filtros.
+
+```{r}
+
+# Seleccionamos de nuevo unas columnas en específico
+
+counties_selected3 = counties %>%
+  select(state, county, population, men, women)
+
+# Calculamos la proporción de mujeres como una fracción entre el número de 
+# mujeres /población
+
+counties_selected3 %>%
+  mutate(proportion_women = women / population)
+```
+
+En resumen, hemos presentado los 4 verbos principales: Select, mutate, filter y 
+arrange; con estos podremos filtrar grandes bases de datas con el objetivo de 
+simplificar nuestro análisis computacional.
+
+
+También podremos usar todos estos verbos en una única instrucción como en el siguiente
+ejemplo:
+
+```{r}
+counties %>%
+  
+  select(state, county, population, men, women) %>% # Seleccionamos 5 columnas
+  
+  mutate(proportion_women = women / population) %>% # Añadimos la proporción de mujeres
+  
+  filter(population >= 10000) %>%  # Filtramos por una población de al menos 
+                                   # 10k habitantes
+  
+  arrange(desc(proportion_women)) # Ordemanos de manera descendente 
+                                  # por la proporción de mujeres
+```
+
+Pero estos verbos no son los únicos. Otros dos útiles son "summarize" y "group_by".
+Filtremos un nuevo conjunto de datos para usar los nuevos verbos.
+
+```{r}
+counties_selected4 = counties %>%
+  select(state, county, population, income, unemployment,land_area)
+```
+
+Agrupamos para encontrar la población mín., máx. desempleo y el ingreso promedio
+
+```{r}
+counties_selected4 %>%
+  summarize(min_population = min(population),
+            max_unemployment = max(unemployment),
+            average_income = mean(income))
+```
+
+¿A cuáles condados corresponden los 2 primeros valores?
+
+```{r}
+counties_selected4 %>% 
+  filter(population == "85")
+
+# filter(unemployment == "29.4")
+```
+
+Agrupamos por "group by()" estado para encontrar el área total y la población
+
+(group by) estado para encontrar el área total y la población
+
+```{r}
+data_grap1 = counties_selected4 %>%
+  group_by(state) %>%
+  summarize(total_area = sum(land_area),
+            total_population = sum(population)) %>%
+mutate(density = total_population  / total_area) %>%
+arrange(desc(density)); data_grap1
+```
+
+
+## 6.4. Paquete tidyr
+
+El paquete "tidyr" en R es utilizado para manipular y reorganizar datos en un 
+formato "tidy", donde cada variable tiene su propia columna y cada observación 
+tiene su propia fila. Sus funciones principales incluyen "gather" para combinar
+múltiples columnas en una sola, "spread" para separar una columna en múltiples,
+y "pivot_longer()" y "pivot_wider()" para transformar datos entre formatos largo y 
+ancho. Estas funciones ayudan a la limpieza y transformación de datos para un
+análisis más eficiente y claro.
+
+Para emplear algunas funciones de tidyr, usaremos la base de datos predeterminada
+"iris" la cual presenta las caracteristicas de 3 tipos diferentes de flores.
+
+```{r}
+view(iris)
+glimpse(iris)
+```
+
+Vamos a emplear estos datos principalmente para limpieza en cuanto a formato de presentación 
+de los datos. Con el formato "longer" organizaremos nuestra base de datos en solamente 3
+columnas y 600 filas.
+
+```{r}
+iris_longer = pivot_longer(iris, cols = 1:4, 
+                           names_to = "Plant_characteristics",
+                           values_to = "Value")
+
+glimpse(iris_longer)
+```
+
+Para mostrar el siguiente formato con los datos de "table2" que contiene el número de 
+casos de tuberculosis en un número reducido de países.
+
+```{r}
+view(table2)
+glimpse(table2)
+```
+
+
+Ahora, si queremos organizar los datos de forma más "comprimida", usaremos el formato "wider", el 
+cual nos proporcionará una reducción de 12 a 6 filas.
+
+```{r}
+table2_wider = pivot_wider(table2, names_from = type,values_from = count)
+
+glimpse(table2_wider)
+
+```
+
+En resumen, el paquete tidyr nos permitirá ajustar las dimensiones de las bases de datos.
+
+## 6.5. Gráficos con ggplot2
+
+Podemos usar "ggplot2" también que ofrece una agradable malla de gráficos. Generemos 
+un gráfico de dispersión con ggplot2: Relación entre caballos de fuerza y millaje
+por galón con selección de grupos por cilindraje.
+
+```{r}
+grafica = mtcars %>% 
+  
+  ggplot(aes(x = mpg, y = hp)) +
+  geom_point(aes(color = factor(cyl))) +
+  geom_smooth(method='lm', formula= y~x, se = F)+
+  labs(title = "Gráfico de dispersión", x = "Millas por Galón (Gasto)",
+       y = "Caballos de fuerza")
+  
+grafica
+
+```
+
+
+
+Generemos un histograma con ggplot2
+
+```{r}
+ggplot(mtcars, aes(x = mpg)) +
+  geom_histogram(binwidth = 2, fill = "lightblue", color = "black") +
+  labs(title = "Histograma de Consumo de Combustible", x = "Consumo (mpg)", y = "Frecuencia")
+```
+
+
+
+Veamos unos boxplots.
+
+```{r}
+ggplot(mtcars, aes(x = factor(cyl), y = hp)) +
+  geom_boxplot(fill = "orange", color = "black") +
+  labs(title = "Boxplots de Potencia (hp) y Desplazamiento (disp) por Cilindros",
+       x = "Cilindros", y = "Valor") +
+  geom_boxplot(aes(x = factor(cyl), y = disp), fill = "purple", color = "black", alpha = 0.7) +
+  facet_grid(. ~ cyl, scales = "free", space = "free_x") +
+  theme_minimal()
+```
+
+
+
+
+Según multiples analistas, ggplot2 es el mejor paquete para gráficos en estadística 
+descriptiva 2D. Estu queda a su criterio personal, pueden usar lo gráficos base de R
+o usar ggplot2.
+
+Recomendamos con un alto hincapie, revisar la documentación en internet de los paquetes como
+dplyr, ggplot2, tseries, urca y forecast para esta primera parte del curso. Si entrenan esta
+documentación y siguen las monitorías de manera frecuente, se volveran unos duros en R.
+
+Hasta pronto ;)
+
+
+
+
+
+
+
+
+
+
+
+

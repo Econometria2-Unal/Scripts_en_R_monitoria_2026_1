@@ -1,0 +1,734 @@
+---
+title: "Sesión 7 - Modelos de Vectores Autorregresivos"
+author: "Monitorías Econometría II"
+date: "2023-02"
+output:
+  html_document:
+    toc: yes
+    number_sections: FALSE
+    theme: united
+    css: style.css
+  pdf_document:
+    toc: yes
+subtitle: Universidad Nacional de Colombia - Facultad de Ciencias Económicas
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+En esta sesión introduciremos los modelos de vectores autorregresivos en R, el 
+objetivo principal de la sesión es comprender el funcionamiento de la programación 
+de los modelos VAR. Además, se analizaran métodos y funciones para graficar, simular y
+manipular series multivariadas. Se usará la metoodlogía Box-Jenkins multiecuacional e 
+introduciremos las gráficas de impulso respuesta.
+
+La sesión se divide en dos partes. Una primera parte con una ilustración del proceso 
+con series simuladas y una segunda parte donde generaremos el proceso con un ejemplo del
+libro de Enders, el cual considera un VAR con tres variables: Índice de producción
+industrial, el índice de precios al consumidor y la tasa de desempleo (todas las variables
+de Estados Unidos). 
+
+## Instalación de paquetes
+
+Para estas sesión traemos por primera vez el paquete "vars" el cual nos permitirá
+usar modelos de vectores autorregresivos.
+
+```{r}
+library(pacman)
+
+pacman::p_load(
+  
+  vars,        # Para usar modelos VAR
+  urca,        # Para realizar pruebas de raíz unitaria
+  ggfortify,   # Para graficar series de tiempo
+  gridExtra,   # Para crear gráficos de análisis exploratorio de datos
+  tidyverse,   # Paquete que incluye ggplot2 y dplyr
+  tidyr,       # Para manipular y organizar datos 
+  readxl       # Para leer archivos .xlsx
+)
+```
+
+# 1. Creación de serie simulada 
+
+En esta sección crearemos dos series simuladas para ilustrar el mecanismo de los
+VAR, vamos a simular un modelo VAR(1) en dos variables. En consecuencia, la matriz A_1 
+será de dimensiones 2x2 y tendrá como componentes: a11=0.3; a12=0.2; a21=0.5; 
+a22=0.6. En este ejemplo asumimos que conocemos el verdadero PGD, aunque en la vida
+real esto no es posible. 
+
+En primer lugar, se fija una semilla para obtener los mismos resultados. 
+
+```{r}
+set.seed(82901) 
+```
+
+Ahora, crearemos las variables simuladas y las incluiremos en un matriz Tx2. Por 
+lo que fijamos un número de T observaciones y creamos el vector.
+
+```{r}
+T = 300 
+
+
+
+y_t <- cbind(rep(0, T),rep(0, T))
+```
+
+En tanto hay dos variables, habrá 2 residuales. Supondrémos que se 
+distribuyen normal.
+
+```{r}
+u_t = cbind(rnorm(T), rnorm(T))
+```
+
+Creamos la matriz A_1, que contiene los coeficientes del primer rezago. 
+
+```{r}
+A_1 = cbind(c(0.3, 0.5), c(0.2, 0.6))
+```
+
+Ahora, crearemos una función "sim" que nos permitirá simular lo datos para cada 
+variable que hemos creado. 
+
+```{r}
+sim = function(y_t, A_1, u_t, T){
+  for (i in 2:T) {
+    y_t[i,] = A_1 %*% y_t[i-1,] + u_t[i,]
+  }  
+  return(y_t)
+}
+
+
+y_t = sim(y_t, A_1, u_t, T) # La función sim lo que busca es llenar la matriz 
+                            # de ceros y_t con valores
+
+```
+
+
+Una vez creada la matriz de datos, la convertimos en una serie de tiempo multivariada
+usando la función ts()
+```{r}
+y_t=ts(y_t, start=c(1900,1), frequency=4)
+
+```
+
+Analicemos el comportamiento gráfico de la serie creada. Con grid.arrange(), 
+podremos incluir varias gráficas en un solo Plot.
+
+```{r}
+y1 = autoplot(y_t[,1], size=1,ts.colour="orange", xlab="",ylab="",
+              main="Variable y_1")
+y2 = autoplot(y_t[,2], size=1,ts.colour="darkolivegreen4", xlab="",ylab="",
+              main="Variable y_2")
+
+grid.arrange(y1,y2,ncol=2)
+```
+
+Recordemos que para usar los modelos VAR, es importante que las series empleadas 
+sean I(0), es decir, deben ser estacionarias para usar esta metodología. En 
+consecuencia, la gráfica anterior sugiere un comportamiento estacionario, verifiquemos
+con las prueba Dickey-Fuller.
+
+```{r}
+adf1= ur.df(y_t[,1], lags=3,selectlags = "AIC",type="none")
+summary(adf1) #Rechazo H0, la serie es I(0)
+
+adf2= ur.df(y_t[,2], lags=3,selectlags = "AIC",type="none")
+summary(adf2) #Rechazo H0, la serie es I(0)
+```
+
+Observemos, que la prueba Dickey-Fuller indica que las series son estacionarias. 
+
+# 2. Metodología Box-Jenkins para series multivariadas 
+
+En esta sección, emplearemos la metodología Box-Jenkins que ya hemos visto en sesiones
+pasadas, pero ahora, para series multivariadas. En sí, la metodología no se altera 
+mucho.
+
+## 2.1. Identificación
+
+Ya hemos analizado la serie en la primera sección. Vimos su comportamiento gráfico y 
+verificamos estacionareidad. Veamos ahora que VAR(P) escogemos, para ello usamos 
+la función VARselect que nos proporcionará cuatro criterios de información que indican 
+que orden debería establecerse.
+
+
+```{r}
+# Selección de rezagos para un VAR con tendencia e intercepto.
+VARselect(y_t, lag.max=6,type = "both", season = NULL)
+
+# Selección de rezagos para un VAR con sólo intercepto.
+VARselect(y_t, lag.max=6,type = "const", season = NULL)
+
+# Selección de rezagos para un VAR sin términos determinísticos.
+VARselect(y_t, lag.max=6,type = "none", season = NULL)
+```
+
+Hemos notado que para cada posible prueba se nos recomienda un VAR(1). Por ende,
+seleccionamos un VAR(1) dados los criterios de información. 
+
+## 2.2. Estimación 
+
+Ahora, para estimar el modelo VAR(1) apropiado, verifiquemos si debemos estimar el 
+modelo con tendencia y deriva.
+
+Las siguientes estimaciones nos mostrarán la significancia de los coeficientes así
+como la significancia de un intercepto y una deriva. Si estas no resultan significativas
+se pasará a la siguiente estimación. Metodología similar que usamos para las pruebas 
+de Dickey-Fuller.
+ 
+```{r}
+
+# VAR con tendencia e intercepto
+V.tr = VAR(y_t, p=1, type="both", season=NULL)
+summary(V.tr) # La tendencia no es significativa, analizamos const
+
+# VAR con intercepto.
+V.dr= VAR(y_t, p=1, type="const", season=NULL) 
+summary(V.dr) # El intercepto es significativo en una ecuación, veamos none.
+
+#VAR sin términos determinísticos.
+V.no = VAR(y_t, p=1, type="none", season=NULL)  
+summary(V.no)
+```
+ 
+Seleccionamos la estimación sin términos determinísticos. Estó debido a que en 
+la primera estimación notamos que la tendencia ("trend") no es significativa, por 
+lo que pasamos a la segunda estimación. En esta segunda estimación, la deriva no 
+es significativa, lo que nos deja con la última estimación que no tiene términos
+determinísticos.
+
+
+Ahora analizaremos si el proceso es estable: en los modelos VAR se debe cumplir
+que todas las raíces del polinomio característico estén por fuera del círculo unitario. 
+En esta caso, roots() representa el inverso de dicha raíces, de manera que para
+que el proceso sea estable debe tener módulos inferiores a 1. 
+
+```{r}
+roots(V.no)
+```
+
+El proceso es estable.
+
+Analicemos los coeficientes estimados y la matriz de varianzas y covarianzas de 
+los residuales.
+
+```{r}
+Sigma.est = summary(V.no)$covres 
+Sigma.est 
+```
+
+Esta es la matriz (Sigma). Si se hace una descomposición de Choleski recordar que: 
+Sigma = P %*% t(P), donde P es una matriz triangular inferior. Individualmente cada 
+residual debe ser un ruido blanco. Sin embargo, hay correlación contemporánea 
+entre ellos. (Son residuales que corresponden a la estimación de un VAR en forma reducida)
+
+
+## 2.3. Validación de supuestos 
+
+Para la verificación de supuestos en series multivariadas, usamos las siguientes 
+pruebas.
+
+**No autocorrelación serial:**
+
+Usamos la prueba serial.test(), donde "PT.asymptotic" es para muestra grande y 
+"PT.adjusted" para muestra pequeña.
+
+```{r}
+P.75=serial.test(V.no, lags.pt = 75, type = "PT.asymptotic");P.75 # No rechazo
+P.30=serial.test(V.no, lags.pt = 30, type = "PT.asymptotic");P.30 # No rechazo
+P.20=serial.test(V.no, lags.pt = 20, type = "PT.asymptotic");P.20 # No rechazo
+
+```
+
+Veamos que para los rezagos seleccionados, se cumple el supuesto de no autocorrelación
+serial mediante la prueba formal. 
+
+Graficamos los residuales para 20 pasos adelante: se grafican los residuales, 
+su distribución, la ACF y PACF de los residuales y a ACF y PACF de los 
+residuales al cuadrado (proxy para heterocedasticidad)
+
+```{r}
+plot(P.20, names = "Series.1")
+plot(P.20, names = "Series.2") 
+```
+
+Los residuales de la primera y segunda serie se comportan bien. 
+
+
+**Homocedasticidad:**
+
+Para la homocedasticidad usamos el test ARCH multivariado.
+
+```{r}
+arch.test(V.no, lags.multi = 24, multivariate.only = TRUE)
+arch.test(V.no, lags.multi = 12, multivariate.only = TRUE)
+```
+
+No se rechaza la prueba, se cumple el supuesto de homocedasticidad.
+
+**Normalidad**
+
+Para la normalidad, usamos el test Jarque-Bera para series multivariadas.
+
+```{r}
+normality.test(V.no) 
+
+```
+
+No se rechaza la prueba, se cumple normalidad.
+
+## 2.4.  Pronóstico y funciones de impulso respuesta
+
+Algunos usos del modelo son: Pronósticos, Análisis de impulso respuesta,
+Descomposición de varianza, causalidad de Granger e identificación de un SVAR. 
+Aquí enfatizaremos únicamente en los primeros tres.
+
+**Pronóstico:**
+
+Generamos la predicción para 12 pasos adelante, y fijamos intervalos al 95% de 
+confianza.
+
+```{r}
+
+predict(V.no, n.ahead = 12,ci=0.95) 
+autoplot(predict(V.no, n.ahead = 12,ci=0.95)) 
+
+```
+
+Como el proceso tiene media cero, el pronóstico converge a la media.
+
+Con Fanchart, podremos regiones de probabilidad para el pronóstico: las zonas 
+más oscuras son más probables.
+
+```{r}
+fanchart(predict(V.no, n.ahead = 12))
+```
+
+**Gráficas Impulso respuesta:**
+
+Análisis Impulso Respuesta: ¿Qué efecto tiene un choque exógeno sobre una variable 
+sobre las variables del sistema? todos los choques exógenos se incorporan/capturan 
+en los residuales. Se parte del supuesto de Ceteris Paribus: los choques de una 
+variable no deben correlacionarse con el de otra. Las funciones de impulso 
+respuesta nos mostraran como reacciona una determinada variable ante un choque
+exógeno en otra variable de la serie multivariada (esta otra variable puede ser ella misma). 
+
+Similar a un pronóstico, fijamos un número de pasos adelante para analizar el efecto
+de las funciones impulso respuesta en un periodo determinado.
+
+```{r}
+pasos_adelante = 0:18
+```
+
+Función para gráficar las funciones impulso respuesta
+
+```{r}
+impulso_respuesta = function(var, impulso, respuesta, pasos_adelante, ortog, int_conf, titulo){
+  # Cáclulo de la función impulso respuesta
+  total_pasos_futuros = length(pasos_adelante) - 1
+  IRF = irf(var, impulse=impulso, response=respuesta, n.ahead = total_pasos_futuros, ortho=ortog, ci = int_conf)
+  IRF_data_frame = data.frame(IRF$irf,IRF$Lower,IRF$Upper, pasos_adelante)
+  # Gráfica de la función impulso respuesta
+  graph = IRF_data_frame %>% 
+    ggplot(aes(x=IRF_data_frame[,4], y=IRF_data_frame[,1], ymin=IRF_data_frame[,2], ymax=IRF_data_frame[,3] )) +
+    geom_hline(yintercept = 0, color="red") +
+    geom_ribbon(fill="grey", alpha=0.2) +
+    geom_line() +
+    theme_light() +
+    ggtitle(titulo)+
+    ylab("")+
+    xlab("pasos adelante") +
+    theme(plot.title = element_text(size = 11, hjust=0.5),
+          axis.title.y = element_text(size=11))    
+  return(graph)
+}
+```
+
+Una vez llamada la función, calculamos las posibles IRF de la serie multivariada.
+Si tenemos dos series individuales en el sistema, es de esperarse obtener cuatro gráficas
+de IRF.
+
+```{r}
+y1.y1 = impulso_respuesta(V.no, "Series.1", "Series.1", pasos_adelante, ortog = F,
+                          int_conf = 0.95, titulo = "Impulso de y1 - respuesta de y1")
+y1.y2 = impulso_respuesta(V.no, "Series.1", "Series.2", pasos_adelante, ortog = F,
+                          int_conf = 0.95, titulo = "Impulso de y1 - respuesta de y2")
+y2.y1 = impulso_respuesta(V.no, "Series.2", "Series.1", pasos_adelante, ortog = F,
+                          int_conf = 0.95, titulo = "Impulso de y2 - respuesta de y1")
+y2.y2 = impulso_respuesta(V.no, "Series.2", "Series.2", pasos_adelante, ortog = F, 
+                          int_conf = 0.95, titulo = "Impulso de y2 - respuesta de y2")
+
+grid.arrange(y1.y1,y1.y2,y2.y1,y2.y2, ncol = 2)
+```
+
+Sin embargo, aquí hemos obtenido las IRF sin ortogonalizar.
+
+¿Qué son las respuestas ortogonalizadas? Como les mencionamos anteriormente,
+u_1 y u_2 (aunque individualmente son ruido blanco) están correlacionados de forma contemporánea 
+(en el periodo t), de manera que los choques entre las variables posiblemente también estén correlacionados. 
+Por lo tanto, las funciones impulso-respuesta ortogonales hacen una transformación de
+la matriz de varianzas y covarianzas de los residuales, de forma que ya no estén correlacionados 
+(se hace a partir de la descomposición de choleski), y por ende, los choques entre las variables tampoco. 
+La interpretación es exactamente la misma, sin embargo, el ordenamiento de las variables importa: 
+la primera variable afecta contemporáneamente a todas las variables del sistema, mientras la segunda variable afecta contemporáneamente a todas las variables menos a la primera, la tercera afecta a todas menos
+a la primera y la segunda variable, etc...
+
+Para el calculo de las funciones impuslo respuesta ortogonalizadas lo único que hay que hacer es cambiar el parámetro ortog=F a ortog=T.
+
+```{r}
+y1.y1. = impulso_respuesta(V.no, "Series.1", "Series.1", pasos_adelante, ortog = T,
+                           int_conf = 0.95, titulo = "Impulso ortogonal de y1 - respuesta de y1")
+y1.y2. = impulso_respuesta(V.no, "Series.1", "Series.2", pasos_adelante, ortog = T,
+                           int_conf = 0.95, titulo = "Impulso ortogonal de y1 - respuesta de y2")
+y2.y1. = impulso_respuesta(V.no, "Series.2", "Series.1", pasos_adelante, ortog = T,
+                           int_conf = 0.95, titulo = "Impulso ortogonal de y2 - respuesta de y1")
+y2.y2. = impulso_respuesta(V.no, "Series.2", "Series.2", pasos_adelante, ortog = T,
+                           int_conf = 0.95, titulo = "Impulso ortogonal de y2 - respuesta de y2")
+
+grid.arrange(y1.y1.,y1.y2.,y2.y1.,y2.y2., ncol = 2)
+```
+
+
+**Desomposición de la varianza:**
+
+Aquí veremos la proporción de la varianza de error de pronóstico de cada variable
+explicada por las variables dentro del sistema. Veamos una muestra graficamente. 
+
+```{r}
+fevd(V.no, n.ahead = 18)
+plot(fevd(V.no, n.ahead = 18),col=c("orange3", "firebrick4"))
+```
+
+Para ver las funciones de Impulso-Respuesta, veamos la representación VMA del 
+proceso VAR(1) modelado (10 pasos adelante). De esta representación se  obtienen 
+las funciones impulso-respuesta al hacer las derivadas parciales respectivas.
+
+```{r}
+Phi(V.no,nstep=10) 
+```
+
+La función psi nos calcula los coeficientes de las matrices de la representación 
+VMA bajo una estrategia de identificación ortogonal. Es decir, son los 
+coeficientes de las IRF ortogonales n pasos adelante. 
+
+```{r}
+Psi(V.no, nstep = 10)
+```
+
+# 3. Ejemplo de Enders 
+
+Tenemos series de frecuencia trimestral desde 1960 Q1 - 2012 Q4 para el Índice de Producción Industrial, 
+El índice de precios al consumidor y la tasa de desempleo de Estados Unidos
+
+Partamos de este ejercicios de Enders: 
+"in order to estimate the dynamic effects of aggregate demand and supply shocks on industrial 
+production and the inflation rate. Create the logarithmic change in the index of industrial 
+production (indprod) as Δlipt = ln(indprod) − ln(indprodt−1) and the inflation rate 
+(as measured by  CPI) as inft = log(cpit) − log(cpit−1)"
+                                                          
+Sin embargo, le incorporaremos la tasa de desempleo para tener un sistema en tres variables.
+
+Definimos la base de datos y las variables nivel
+
+```{r}
+Base = read_excel(file.choose())
+attach(Base)
+            
+IPI = ts(IPI, start=c(1960,1),frequency=4)
+CPI= ts(CPI, start=c(1960,1),frequency=4)
+UNEM = ts(Unem, start=c(1960,1),frequency=4)
+```
+
+
+Ahora definimos la variación del CPI y la tasa de crecimiento del IPI
+
+Nota: Inicialmente, este ejemplo iba a ser trabajado con la inflación en vez de la 
+variación del CPI tal como esta propuesto en el libro de Enders. Sin embargo, cuando
+se trabajaba con la inflación se producián contradicciones en la prueba Dickey-Fuller
+por lo que el equipo de monitores prefirió usar la tasa de CPI
+
+Recuerden que en sus trabajos pueden guiarse principalmente de la teoría económica. 
+Aquí los resultados fueron 'sinteticamente' preparados. Además, no olviden que si 
+quieren calcular la inflación a partir del CPI deben hacer la transformación con 
+logaritmo y diferencia.
+
+
+```{r}
+dl.IPI = diff(log(IPI))
+d.CPI = diff(CPI)
+```
+
+Veamos las series gráficas.
+
+```{r}
+autoplot(dl.IPI, size=1, ts.colour="lightblue", xlab="Año", ylab="Porcentaje", 
+         main="Tasa de crecimeinto IPI")+labs(subtitle = "USA (1960-2012)")
+autoplot(d.CPI, size=1, ts.colour="sienna1", xlab="Año",  ylab="Porcentaje",
+         main="Variación de CPI")+ labs(subtitle = "USA (1960-2012)")
+autoplot(UNEM, size=1, ts.colour="mediumpurple2", xlab="Año", ylab="Porcentaje",
+         main="Tasa de desempleo")+ labs(subtitle = "USA (1960-2012)")
+```
+
+Parecen ser estacionarias, confirmemos con la prueba Dickey-Fuller. Anticipadamente, 
+hacemos la prueba con deriva ya que sabemos que esta es significativa.
+
+```{r}
+#Tasa de crecimiento IPI
+adf3= ur.df(dl.IPI, lags=6, selectlags="AIC", type="drift") 
+summary(adf3) # La serie es estacionaria y con intercepto
+ 
+#Tasa de inflación
+adf4= ur.df(d.CPI, lags=6, selectlags="AIC", type="drift")
+summary(adf4) # La serie es estacionaria y con intercepto.
+
+#Tasa de desempleo
+adf5= ur.df(UNEM, lags=6, selectlags="AIC", type="drift")
+summary(adf5) # La serie es estacionaria y con intercepto.
+```
+
+Todas las variables son estacionarias y tienen intercepto. Ahora, con el fin de 
+estimar un VAR, generamos una matriz con las tres variables para crear una serie
+multivariada.
+
+```{r}
+Unem = UNEM[1:211]
+Y = cbind(dl.IPI,Unem,d.CPI)
+```
+
+## 3.1. Identificación 
+
+Usamos VARselect() para identificar dos posibles modelos VAR, uno con intercepto
+y otro sin términos determinísticos.
+
+```{r}
+#Selección de rezagos para un VAR con sólo intercepto.
+VARselect(Y, lag.max=6,type = "const", season = NULL) 
+
+#Selección de rezagos para un VAR sin términos determinísticos.
+VARselect(Y, lag.max=6,type = "none", season = NULL) 
+
+```
+
+Los criterios de información de ambas funciones, sugieren en su mayoría, un VAR(3). 
+Lo más seguro es que nos quedemos con el VAR con constantes debido a que hemos visto 
+en la prueba Dickey-Fuller que estas series tienen deriva significativa.
+
+Además, nos llama la atención el modelo con constante debido a que es un VAR(3) que es
+más parsimonioso que un VAR(5). De cierta forma, el criterio de parsimonia no es tan 
+relevante en modelos VAR, no obstante recuerden que si tenemos un VAR(5) con 3 variables
+y sin inctercepto, estaríamos estimando 9*5 coeficientes por lo menos, lo que hace que se 
+pierda interpretabilidad.
+
+## 3.2. Estimación 
+
+Para elegir cuál modelo estimar, vamos a fijarnos en las gráficas de las series 
+(ninguna aparenta tener tendencia), y de la significancia estadística de los 
+términos determinísticos en cada una de las ecuaciones del modelo VAR.
+
+```{r}
+# VAR con sólo intercepto.
+V.dr.1= VAR(Y, p=3, type="const", season=NULL) 
+summary(V.dr.1) 
+
+# VAR sin términos determinísticos.
+V.no.1 = VAR(Y, p=3, type="none", season=NULL)  
+summary(V.no.1)
+```
+
+Para la estimación con intercepto, este solo es significativo para una de las 
+variables, lo que significa que la matriz A_0, debe incluirse. Por ello, 
+elegimos el VAR(3) con constante, con objeto de que el proceso 
+no tenga media cero, debido a que no todas las series parecen tener dicha característica.
+Asimismo, porque la constante es significativa en al menos una de las 3 ecuaciones. 
+
+Ahora analizaremos si el proceso es estable: en los modelos VAR se debe cumplir que todas las raíces del polinomio
+característico estén por fuera del círculo unitario. En esta caso, rooots() representa el inverso de dicha raíces, 
+de manera que para que el proceso sea estable debe tener módulos inferiores a 1. Además, veremos sus coeficientes 
+de estimación
+
+```{r}
+roots(V.dr.1)
+```
+
+El proceso es estable. 
+
+```{r}
+Acoef(V.dr.1) #Presenta los resultados de la matriz A_1, A_2 y A_3
+
+Sigma.e = summary(V.dr.1)$covres
+Sigma.e
+```
+
+## 3.3. Validación de supuestos
+
+Ahora vamos a realizar la validación de supuestos.
+
+**No autocorrelación serial:**
+
+```{r}
+
+P.75.1=serial.test(V.dr.1, lags.pt = 50, type = "PT.asymptotic");P.75.1 #No rechazo
+P.30.1=serial.test(V.dr.1, lags.pt = 30, type = "PT.asymptotic");P.30.1 #No rechazo
+P.20.1=serial.test(V.dr.1, lags.pt = 20, type = "PT.asymptotic");P.20.1 #No rechazo
+```
+
+Se cumple el supuesto de no-autocorrelación serial para los rezagos seleccionados.
+Veamos el argumento gráfico, graficamos los residuales para 20 pasos_adelantes: se grafican los residuales, su distribución, la ACF y PACF de los residuales y la ACF y PACF de los residuales al cuadrado (proxy para heterocedasticidad).
+
+```{r}
+plot(P.20.1, names = "dl.IPI") 
+plot(P.20.1, names = "Unem") 
+plot(P.20.1, names= "d.CPI") 
+
+```
+
+Los resiudales se comportan bastante bien, no obstante parece que no se comportan
+normalmente. 
+
+**Homocedasticidad:**
+
+```{r}
+
+arch.test(V.dr.1, lags.multi = 24, multivariate.only = TRUE) # rechazo H0
+arch.test(V.dr.1, lags.multi = 12, multivariate.only = TRUE) # rechazo H0 
+```
+
+Se rechaza la hipótesis nula, luego, no se cumple el supuesto de homocedasticidad.
+
+**Normalidad:**
+
+```{r}
+normality.test(V.dr.1)
+```
+
+Rechazo, no se cumple el supuesto de normalidad. 
+
+## 3.4. Pronóstico y funciones de impulso respuesta
+
+**Pronóstico:**
+
+Para poder hacer inferencia en las IRF, pronósticos, etc, tenemos que usar Bootstrapping: son
+simulaciones de monte carlo que permiten calcular unos intervalos de confianza asintóticos a 
+partir de los residuales de las regresiones. 
+
+El pronóstico es insesgado, pero no se pueden computar los intervalos de confianza de la manera
+convencional porque los residuales no son normales, por ende hay que hacer bootstrapping.
+
+```{r}
+predict(V.dr.1, n.ahead = 12) 
+autoplot(predict(V.dr.1, n.ahead = 12)) 
+```
+
+Para ello, Necesitamos estimar los intervalos de confianza por Bootstrapping
+
+```{r}
+library(VAR.etp)
+For.Boot= VAR.BPR(Y, 3, 12, nboot = 1000, type = "const", alpha = 0.95)
+For.Boot
+
+```
+
+Veamos un gráfico puntual con Bootstrapping
+
+```{r}
+boots = For.Boot$Forecast
+boots
+
+boots.forecast = ts(boots, start = c(2013,2), freq = 4)
+autoplot(boots.forecast, main = "Pronóstico con Boostrapping")+
+  labs(subtitle = "(2013 T2 - 2016 T2)")
+
+```
+
+
+**Funciones de impulso respuesta:**
+
+Análisis Impulso-Respuesta: ¿Qué efecto tiene un choque exógeno sobre una variable sobre las variables del sistema?
+todos los choques exógenos se incorporan/capturan en los residuales. 
+Se parte del supuesto de Ceteris Paribus: los choques de una variable no deben correlacionarse con el de otra.
+
+Como en economía los choques están generalmente correlacionados, usaremos la descomposición de Choleski para obtener 
+las IRF ortogonales.
+
+En este caso: el crecimiento del índice de producción industrial afecta contemporáneamente a la tasa desempleo y a la inflación. La tasa de desempleo afecta de forma contemporánea a la inflación pero no al crecimiento del IPI
+La tasa de inflación no afecta de forma contemporánea ni al crecimeinto del IPI ni al desempleo.
+
+Para este caso, analizaremos directamente las funciones de impulso respuesta ortogonales. Fijemos 24 pasos adelante. 
+
+```{r}
+pasos_adelantes = 0:24
+```
+
+
+IRF de las variables ante distintos choques ortogonales
+impulso respuesta: 1. calcula las IRF y 2. graficarlas.
+
+```{r}
+
+Y1.Y1. = impulso_respuesta(V.dr.1, "dl.IPI",
+                           "dl.IPI", pasos_adelante, ortog = T, int_conf = 0.95, 
+                           titulo = "Imp. del crecimiento del IPI - res. del crecimiento del IPI")
+Y1.Y2. = impulso_respuesta(V.dr.1, "dl.IPI",
+                           "Unem", pasos_adelante, ortog = T, int_conf = 0.95, 
+                           titulo = "Imp. del crecimiento del IPI - resp. del desempleo")
+Y1.Y3. = impulso_respuesta(V.dr.1, "dl.IPI",
+                           "d.CPI", pasos_adelante, ortog = T, int_conf = 0.95, 
+                           titulo = "Imp. del crecimiento del IPI - resp. de la variación en CPI")
+Y2.Y1. = impulso_respuesta(V.dr.1, "Unem",
+                           "dl.IPI", pasos_adelante, ortog = T, int_conf = 0.95, 
+                           titulo = "Imp. tasa de desempleo - resp. del crecimiento del IPI")
+Y2.Y2. = impulso_respuesta(V.dr.1, "Unem",
+                           "Unem", pasos_adelante, ortog = T, int_conf = 0.95, 
+                           titulo = "Imp. de la tasa de desempleo - resp. tasa de desempleo")
+Y2.Y3. = impulso_respuesta(V.dr.1, "Unem",
+                           "d.CPI", pasos_adelante, ortog = T, int_conf = 0.95, 
+                           titulo = "Imp. de la tasa de desempleo - resp. de la variación en CPI")
+Y3.Y1. = impulso_respuesta(V.dr.1, "d.CPI",
+                           "dl.IPI", pasos_adelante, ortog = T, int_conf = 0.95, 
+                           titulo = "Imp. de la variación en CPI - resp. del crecimiento del IPI")
+Y3.Y2. = impulso_respuesta(V.dr.1, "d.CPI",
+                           "Unem", pasos_adelante, ortog = T, int_conf = 0.95, 
+                           titulo = "Imp. de la variación en CPI - resp. del desempleo")
+Y3.Y3. = impulso_respuesta(V.dr.1, "d.CPI",
+                           "d.CPI", pasos_adelante, ortog = T, int_conf = 0.95, 
+                           titulo = "Imp. de la variación en CPI - resp. de la variación en CPI")
+```
+
+Las IRF ORTOGONALES son:
+
+```{r}
+grid.arrange(Y1.Y1., Y1.Y2., Y1.Y3., Y2.Y1., Y2.Y2., Y2.Y3., Y3.Y1., Y3.Y2., Y3.Y3., ncol=3)
+```
+
+
+**Descomposición de la varianza del error de pronóstico**
+
+¿Qué proporción de la varianza del error de pronóstico del crecimiento del IPI se explica por el crecimiento del IPI, la tasa de desempleo y la variación del CPI?
+¿Qué proporción de la varianza del error de pronóstico de la tasa de desempleo se explica por el crecimiento del IPI,la tasa de desempleo y la variación del CPI?
+¿Qué proporción de la varianza del error de pronóstico de la variación del CPI se explica por el crecimiento del IPI,la tasa de desempleo y la variación del CPI?
+
+```{r}
+fevd(V.dr.1, n.ahead = 24)
+plot(fevd(V.dr.1, n.ahead = 24),col=c("magenta4", "cyan3", "slateblue3"))
+```
+
+
+Representación VMA del proceso VAR(1) modelado (10 pasos adelante). De esta representación se 
+obtienen las funciones impulso-respuesta al hacer las derivadas parciales respectivas.
+
+```{r}
+Phi(V.dr.1,nstep=10) 
+```
+
+
+La función psi nos calcula los coeficientes de las matrices de la representación VMA bajo una
+estrategia de identificación ortogonal. Es decir, son los coeficientes de las IRF ortogonales n pasos adelante
+
+```{r}
+Psi(V.dr.1,nstep=10)  
+```
+
+Fin del código.
+
+
