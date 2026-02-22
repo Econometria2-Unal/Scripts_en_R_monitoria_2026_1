@@ -1,40 +1,36 @@
 # Scripts en R - Monitoria de Econometria II
 
-Repositorio con materiales de apoyo para monitorias en R de Econometria II, organizado por sesiones de trabajo.
+Repositorio que contiene el código (los scripts) de monitoria del lenguaje de programación `R` de Econometria II
 
-## Panorama de branches
+## Ramas (branches) del repositorio 
 
-| Branch | Enfoque | Cobertura |
+| Rama (Branch) del repositorio | Descripción | Sesiones |
 |---|---|---|
-| `main` | Base del curso | Sesiones 1 a 4 |
-| `Códigos_semestre_2025_2` | Version extendida del semestre 2025-2 | Sesiones 1 a 10 |
+| `main` | Ramificación principal para el 2026-1 (códigos actualizados) | Sesiones 1 a 3 |
+| `Códigos_semestre_2025_2` | Ramificación secundaria del semestre 2025-2 (códigos desactualizados) | Sesiones 1 a 10 |
 
-## Contenido por branch
+## Contenido por Rama (branch)
 
-### `main`
-- Introduccion a R y flujo inicial de trabajo (`Sesion 1`).
-- Simulacion de procesos AR, MA y ARMA (`Sesion 2`).
-- Metodologia Box-Jenkins: identificacion y estimacion (`Sesion 3`).
-- Implementacion Box-Jenkins completa (`Sesion 4`).
-- Incluye scripts `.R`, documentos `.Rmd/.html/.pdf` y bases de ejemplo (`.xls`, `.rds`).
+### Rama (branch) `main`
+- `Sesion 1`: **Introduccion a R**.
+- `Sesion 2`: **Simulacion de procesos AR, MA y ARMA**.
+- `Sesion 3`: **Box Jenkins Metodología Completa**
 
-### `Códigos_semestre_2025_2`
-- Conserva todo el contenido base de `main` (Sesiones 1 a 4).
-- Amplia con temas de series de tiempo y econometria aplicada:
-  - Prueba Dickey-Fuller y estacionariedad (`Sesion 5`).
-  - Cointegracion univariada (`Sesion 6`).
-  - Modelos VAR (`Sesion 7`).
-  - Modelos VECM y Johansen (`Sesion 8`).
-  - Datos panel (`Sesion 9`).
-  - Modelos de eleccion binaria: Logit/Probit (`Sesion 10`).
-- Incluye scripts, notas de monitoria, archivos de datos y salidas renderizadas.
+### Rama (branch) `Códigos_semestre_2025_2`
+- `Sesion 1`: **Introduccion a R**.
+- `Sesion 2`: **Simulacion de procesos AR, MA y ARMA**.
+- `Sesion 3`: **Box Jenkins Incompleto**
+- `Sesion 4`: **Box Jenkins Metodología Completa**
+- `Sesion 5`: **Prueba Dickey-Fuller**
+- `Sesion 6`: **Cointegración univariada (metodología Engle-Granger)**
+- `Sesion 7`: **Modelos VAR**
+- `Sesion 8`: **Modelos VECM (Metodología de Cointegración de Johansen)**
+- `Sesion 9`: **Datos Panel**
+- `Sesion 10`: **Modelos de Elección Binaria (Probit y Logit)**
 
-## Guia rapida de uso
+## Guia rapida de uso del repositorio 
 
-```bash
-git checkout main
-# o
-git checkout Códigos_semestre_2025_2
-```
+**Nota:**
+- Rama (branch) `main`: Ramificación principal para el 2026-1 (La que deberían revisar siempre). Contiene todos los cógidos actualizados para el 2026-1. 
+- Rama (branch) `Códigos_semestre_2025_2`: Ramificación secundaria del semestre 2025-2 (No es la rema principal, y solo la deberían revisar en caso de que quieran o requieran revisar algún script del semestre pasado). Los códigos están desactualizados a 2025-2. 
 
-Si buscas una version corta para fundamentos, usa `main`; si necesitas el recorrido completo del semestre 2025-2, usa `Códigos_semestre_2025_2`.
